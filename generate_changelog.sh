@@ -20,9 +20,9 @@ Optionen:
   -h, --help            Diese Hilfe anzeigen
 
 Standard-Ausgabepfade:
-  Kein --path           ../docs/CHANGELOG.md
-  --path foo/           ../docs/CHANGELOG_foo.md
-  --path bar.sh         ../docs/CHANGELOG_bar.md
+  Kein --path           <repo-root>/docs/CHANGELOG.md
+  --path foo/           <repo-root>/docs/CHANGELOG_foo.md
+  --path bar.sh         <repo-root>/docs/CHANGELOG_bar.md
 
 Beispiele:
   $(basename "$0")
@@ -54,22 +54,24 @@ while [[ $# -gt 0 ]]; do
 done
 
 REMOTE=$(git config --get remote.origin.url 2>/dev/null || true)
-REPO_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "Repository")
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+REPO_NAME=$(basename "$REPO_ROOT")
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+DOCS_DIR="${REPO_ROOT}/docs"
 
 if [ -d "$PATH_ARG" ]; then
     TARGET_TYPE="dir"
     TARGET="$PATH_ARG"
     DIRNAME=$(basename "${PATH_ARG%/}")
-    OUTPUT=${OUTPUT_ARG:-../docs/CHANGELOG_${DIRNAME}.md}
+    OUTPUT=${OUTPUT_ARG:-${DOCS_DIR}/CHANGELOG_${DIRNAME}.md}
 elif [ -n "$PATH_ARG" ] && [ "$PATH_ARG" != "-" ]; then
     TARGET_TYPE="file"
     TARGET="$PATH_ARG"
-    OUTPUT=${OUTPUT_ARG:-../docs/CHANGELOG_$(basename "${PATH_ARG%.*}").md}
+    OUTPUT=${OUTPUT_ARG:-${DOCS_DIR}/CHANGELOG_$(basename "${PATH_ARG%.*}").md}
 else
     TARGET_TYPE="all"
     TARGET=""
-    OUTPUT=${OUTPUT_ARG:-../docs/CHANGELOG.md}
+    OUTPUT=${OUTPUT_ARG:-${DOCS_DIR}/CHANGELOG.md}
 fi
 
 python3 - "$TARGET_TYPE" "$TARGET" "$OUTPUT" "$REMOTE" "$BRANCH_ARG" "$SINCE_ARG" "$UNTIL_ARG" "$TITLE_ARG" "$REPO_NAME" "$CURRENT_BRANCH" <<'PYTHON'
