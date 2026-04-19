@@ -1,7 +1,8 @@
 #!/bin/bash
 # Generiert ein Markdown-Changelog aus der Git-Historie.
-# Usage: ./generate_changelog.sh [Pfad/zu/Datei_oder_Verzeichnis] [Ziel/CHANGELOG.md]
+# Usage: ./generate_changelog.sh [Pfad/zu/Datei_oder_Verzeichnis|-] [Ziel/CHANGELOG.md]
 #   Kein Argument    -> alle Commits im Repository
+#   -                -> alle Commits im Repository (Platzhalter, ermöglicht Angabe von $2)
 #   Verzeichnis      -> alle Commits, die Dateien im Verzeichnis betreffen
 #   Datei            -> alle Commits, die diese Datei betreffen
 
@@ -13,7 +14,7 @@ if [ -d "$ARG" ]; then
     TARGET="$ARG"
     DIRNAME=$(basename "${ARG%/}")
     OUTPUT=${2:-../docs/CHANGELOG_${DIRNAME}.md}
-elif [ -n "$ARG" ]; then
+elif [ -n "$ARG" ] && [ "$ARG" != "-" ]; then
     TARGET_TYPE="file"
     TARGET="$ARG"
     OUTPUT=${2:-../docs/CHANGELOG_$(basename "${ARG%.*}").md}
