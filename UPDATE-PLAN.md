@@ -55,6 +55,26 @@ Je Punkt ein Commit.
    - Gliederung nach Typ, im Kopf Zeitraum (erster bis letzter Tag) und Anzahl der Änderungen, kein Datum je Eintrag
      (Variante B, entschieden). Der Präfix steht unter der Typ-Überschrift nicht noch einmal im Eintrag.
    - der vollständige Changelog bleibt unverändert und zeigt alle Commits
+   - Beispiel für das Format (Variante B, echte Commits aus Multiplayer-Template, gekürzt):
+
+     ```markdown
+     ## Multiplayer-Template v0.2.0
+
+     **Zeitraum:** 2026-10-12 – 2026-10-14 · 14 Änderungen
+
+     ### Add
+     - Umbau-Plan für die Styleguide-Anpassung ([7d3fdea](https://github.com/Fox-Alpha/Multiplayer-Template/commit/7d3fdea))
+     - GDScript Styleguide ([f52037e](https://github.com/Fox-Alpha/Multiplayer-Template/commit/f52037e))
+
+     ### Fix
+     - Styleguide format_on_save auf true ([7887107](https://github.com/Fox-Alpha/Multiplayer-Template/commit/7887107))
+
+     ### Upd
+     - Verweise von doc/ auf docs/ angepasst ([e609cf9](https://github.com/Fox-Alpha/Multiplayer-Template/commit/e609cf9))
+     ```
+
+     Verworfen wurden Variante A (zusätzlich Datum je Eintrag) und C (nur Datum je Eintrag, kein Zeitraum). Die Daten
+     je Commit stehen im vollständigen Changelog.
 9. **Standardausgabe:** `<repo-root>/CHANGELOG.md` statt `docs/CHANGELOG.md`.
 10. **Parameterlogik überdenken:** Alle Parameter, ihre Kombinationen und die Ausgabepfade (auch bei `-p`) vorher
     gemeinsam durchsprechen (offene Frage 4). Bekannte Fehler:
