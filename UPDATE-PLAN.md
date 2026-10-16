@@ -83,6 +83,7 @@ keine Ausgabe (Hinweis auf stderr, keine Datei).
 | `-o <Datei>` | Ausgabedatei, relativ zum Aufrufverzeichnis, `-` = Standardausgabe | Pfad oder `-` | siehe unten |
 | `-t <Titel>` | Überschrift | Text | Repo-Name (Branch), bei `-p` zusätzlich die Pfade |
 | `-r` | Release-Notes statt vollständigem Changelog | – | aus |
+| `-f`, `--force` | vorhandene Ausgabedatei überschreiben | – | aus: Abbruch, wenn die Datei existiert |
 | `-V` | Version anzeigen | – | – |
 | `-h` | Hilfe | – | – |
 
@@ -108,6 +109,10 @@ Detailregeln (Vorschlag, gelten, wenn nichts anderes entschieden wird):
 - Unbekannte Konstante oder unlesbares Datum: Fehler mit Hinweis auf `--help`.
 - Standardtitel: `<Repo> (<Branch>)`, mit `-p`/`-e` ergänzt um die Filter, bei `-r` um die Version.
 - Version des Tools als Konstante im Script, ausgegeben von `-V`.
+- Überschreibschutz (entschieden): Existiert die Ausgabedatei, bricht das Script ohne `-f` mit Hinweis ab
+  (Exit-Code ungleich 0). Gilt nicht für `-o -`.
+- Zusätze im Commit-Body beginnen nach dem neuen Workflow mit `-` (Markdown-Liste) statt `===:`. Das Script wertet
+  weiterhin nur die erste Zeile aus; alte `===:`-Commits brauchen keine Sonderbehandlung mehr.
 
 Umsetzung der Filter über Git-Pathspecs: `-e gd -p src/x/` → `':(glob)src/x/**/*.gd'`. Getestet im
 Multiplayer-Template: `*.gd` 163 Commits, `*.gd *.tscn` 192, `src/scenes/player/*.gd` 15.
@@ -131,6 +136,10 @@ Nur lesend gegen das Repo Multiplayer-Template, Ausgaben in den Scratchpad:
   Zahl).
 - Referenzausgabe aus git-cliff auf Branch `feature/git-cliff` des Multiplayer-Templates:
   `~/.cargo/bin/git-cliff -o <scratchpad>/ref.md`. Einträge, Gruppierung und Links vergleichen.
+  Installation auf einem Rechner ohne git-cliff (Ubuntu-rustc 1.85 ist zu alt, git-cliff braucht 1.88+): vorhandene
+  rustup-Toolchain aktualisieren (`rustup update stable`), dann mit ihr bauen:
+  `TC=~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin; RUSTC="$TC/rustc" "$TC/cargo" install git-cliff --locked`.
+  `rustup run stable cargo …` reicht nicht, cargo greift dann trotzdem auf das System-rustc zurück.
 - Sonderfälle in der Historie: `Fix;`, `Chg.`, `Add Kommentare`, `===:`-Commits, `initial commit`, Commit ohne Präfix
   (`Sichtbarkeit auf der Minimap angepasst`).
 - Bereiche: `-b development -s Godot_Engine_4.6_beta_1` muss dieselben Commits liefern wie
