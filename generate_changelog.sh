@@ -1,6 +1,8 @@
 #!/bin/bash
 # Generiert ein Markdown-Changelog aus der Git-Historie.
 
+VERSION="2.0.0"
+
 usage() {
     cat <<EOF
 Usage: $(basename "$0") [OPTIONEN]
@@ -68,6 +70,7 @@ while [[ $# -gt 0 ]]; do
         -u|--until)  need_value "$@"; UNTIL_ARG="$2";  shift 2 ;;
         -t|--title)  need_value "$@"; TITLE_ARG="$2";  shift 2 ;;
         -f|--force)  FORCE=1; shift ;;
+        -V|--version) echo "$(basename "$0") $VERSION"; exit 0 ;;
         -h|--help)   usage; exit 0 ;;
         *) echo "Unbekannte Option: $1" >&2; usage >&2; exit 1 ;;
     esac
