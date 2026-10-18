@@ -5,3 +5,4 @@
 .gitattributes  export-ignore
 CLAUDE.md       export-ignore
 UPDATE-PLAN.md  export-ignore
+docs/dev/       export-ignore
