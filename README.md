@@ -10,7 +10,7 @@ Release-Notes sind nach Typ gegliedert.
 - Filter auf einen oder mehrere Pfade und auf Dateiendungen
 - Release-Notes mit sichtbaren Typen und Git-Trailer `Release: skip`/`Release: show`
 - Commit-Links aus der Remote-URL (SSH oder HTTPS, GitHub, GitLab)
-- Typen und Reihenfolge nach dem [Git-Workflow](docs/dev/workflow.md), alte Präfixe werden zugeordnet
+- [Commit-Typen](docs/commit-types.md) mit fester Reihenfolge, alte Präfixe werden zugeordnet
 - Merge-Commits ausgeblendet, je Commit nur die erste Zeile der Message
 - Überschreibschutz, Ausgabe auch auf die Standardausgabe
 
@@ -67,7 +67,11 @@ die Ausgabedatei, bricht das Script ohne `-f` ab. Gibt es keine Treffer, entsteh
 ## Dokumentation
 
 - [Beispiele, Ausgabeformat und Einschränkungen](docs/usage.md)
-- [Git-Workflow mit Commit-Typen](docs/dev/workflow.md)
+- [Commit-Typen, Reihenfolge und Release-Trailer](docs/commit-types.md)
+
+## Lizenz
+
+[MIT](LICENSE)
 
 ## Part of godot-dev-toolkit
 
