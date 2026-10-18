@@ -20,6 +20,8 @@ Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die R
 - Fix: BrokenPipeError bei -o - mit vorzeitig beendetem Leser [94accfb](https://github.com/Fox-Alpha/godot-changelog-generator/commit/94accfb)
 - Fix: mehrzeilige Commit-Messages als ein Eintrag zusammengefasst [900a891](https://github.com/Fox-Alpha/godot-changelog-generator/commit/900a891)
 - Fix: Commit-Links aus SSH-Remote-URLs fehlerhaft [b6e8626](https://github.com/Fox-Alpha/godot-changelog-generator/commit/b6e8626)
+- Docs: Commit-Typen als eigene Nutzer-Doku [7cd79ce](https://github.com/Fox-Alpha/godot-changelog-generator/commit/7cd79ce)
+- Docs: CHANGELOG.md für v2.1.0 neu erzeugt [ed5f6f8](https://github.com/Fox-Alpha/godot-changelog-generator/commit/ed5f6f8)
 - Docs: Update-Plan auf die offenen Punkte gekürzt [390d21b](https://github.com/Fox-Alpha/godot-changelog-generator/commit/390d21b)
 - Docs: CHANGELOG.md vor dem Release neu erzeugt [9ceabc1](https://github.com/Fox-Alpha/godot-changelog-generator/commit/9ceabc1)
 - Docs: Teststand und offene Abschlusspunkte im Update-Plan [73d47d5](https://github.com/Fox-Alpha/godot-changelog-generator/commit/73d47d5)
@@ -30,6 +32,8 @@ Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die R
 - Docs: Pfade beider Rechner im Update-Plan [a1ba831](https://github.com/Fox-Alpha/godot-changelog-generator/commit/a1ba831)
 - Docs: Wahl des Autordatums im Script begründet [ea02261](https://github.com/Fox-Alpha/godot-changelog-generator/commit/ea02261)
 - Docs: Git-Workflow aus dem Multiplayer-Template übernommen [641b600](https://github.com/Fox-Alpha/godot-changelog-generator/commit/641b600)
+- Cfg: Pflegehinweis zu den Commit-Typen in CLAUDE.md [e5de55c](https://github.com/Fox-Alpha/godot-changelog-generator/commit/e5de55c)
+- Cfg: Entwickler-Doku docs/dev/ nicht in die Release-Archive [858c2df](https://github.com/Fox-Alpha/godot-changelog-generator/commit/858c2df)
 - Cfg: .gitattributes für Release-Archive und Zeilenenden [92fb8b3](https://github.com/Fox-Alpha/godot-changelog-generator/commit/92fb8b3)
 - Cfg: CLAUDE.md mit Projekteinstellungen angelegt [8c293db](https://github.com/Fox-Alpha/godot-changelog-generator/commit/8c293db)
 
