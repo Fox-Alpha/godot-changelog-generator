@@ -3,18 +3,10 @@
 Beispiele, Ausgabeformat und Einschränkungen von `generate_changelog.sh`. Die Optionen stehen im
 [README](../README.md) und in `generate_changelog.sh --help`.
 
-## Commit-Typen und Sortierung
+## Commit-Typen
 
-Die Typen kommen aus dem [Git-Workflow](dev/workflow.md). Im Changelog werden die Commits innerhalb eines Datums in
-dieser Reihenfolge sortiert, die Release-Notes sind in derselben Reihenfolge gegliedert:
-
-`Add` → `Chg` → `Upd` → `Ref` → `Rem` → `Fix` → `Docs` → `Ren` → `Mov` → `Cfg` → `Fmt` → sonstige
-
-- Commits ohne erkannten Typ stehen am Ende des Datumsblocks bzw. unter „Sonstige“.
-- Präfixe aus älteren Historien werden zugeordnet: `Del` → `Rem`, `Mve` → `Mov`, `Ign` → `Cfg`, `Dis` → `Cfg`,
-  `TryFix` → `Fix`.
-- Alte Schreibweisen werden erkannt: `Fix:`, `Fix;`, `Chg.` und Präfix ohne Doppelpunkt (`Add Kommentare`).
-- Die Groß- und Kleinschreibung zählt: `fix:` ist kein Typ.
+Welche Typen das Tool erkennt, in welcher Reihenfolge sie erscheinen, welche in den Release-Notes sichtbar sind und
+wie der Trailer `Release: skip`/`show` wirkt, steht in [Commit-Typen](commit-types.md).
 
 ## Was ausgewertet wird
 
@@ -149,20 +141,7 @@ Der Changelog zeigt alle Commits, unabhängig von Typ und Release-Trailer.
 - Nur die sichtbaren Typen `Add`, `Chg`, `Upd`, `Rem`, `Fix`.
 - Der Präfix steht unter der Typ-Überschrift nicht noch einmal im Eintrag.
 - Kein Datum je Eintrag, der Zeitraum steht im Kopf. Die Daten je Commit stehen im Changelog.
-
-### Release-Trailer
-
-Mit einem Git-Trailer in der letzten Zeile des Bodys lässt sich der Typ übersteuern:
-
-```text
-Fix: Tippfehler im Log-Aufruf
-
-Release: skip
-```
-
-- `Release: skip` blendet einen sonst sichtbaren Commit aus.
-- `Release: show` nimmt einen sonst internen Commit auf. Ohne erkannten Typ erscheint er unter „Sonstige“.
-- Setzen mit `git commit --trailer "Release: skip"`.
+- Der Trailer `Release: skip`/`show` übersteuert die Sichtbarkeit, siehe [Commit-Typen](commit-types.md#release-trailer).
 
 ## Einschränkungen
 
