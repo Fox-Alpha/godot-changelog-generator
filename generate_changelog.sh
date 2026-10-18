@@ -40,6 +40,7 @@ BRANCH_ARG=""
 SINCE_ARG=""
 UNTIL_ARG=""
 TITLE_ARG=""
+FORCE=0
 
 # Bricht ab, wenn eine Option ohne Wert am Ende steht
 need_value() {
@@ -66,6 +67,7 @@ while [[ $# -gt 0 ]]; do
         -s|--since)  need_value "$@"; SINCE_ARG="$2";  shift 2 ;;
         -u|--until)  need_value "$@"; UNTIL_ARG="$2";  shift 2 ;;
         -t|--title)  need_value "$@"; TITLE_ARG="$2";  shift 2 ;;
+        -f|--force)  FORCE=1; shift ;;
         -h|--help)   usage; exit 0 ;;
         *) echo "Unbekannte Option: $1" >&2; usage >&2; exit 1 ;;
     esac
@@ -82,7 +84,7 @@ CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
 
 # Pfade kommen als letzte Argumente, ihre Anzahl ist beliebig
 python3 - "$OUTPUT_ARG" "$REMOTE" "$BRANCH_ARG" "$SINCE_ARG" "$UNTIL_ARG" "$TITLE_ARG" \
-    "$REPO_ROOT" "$CURRENT_BRANCH" "$EXT_ARG" "${PATHS[@]}" <<'PYTHON'
+    "$REPO_ROOT" "$CURRENT_BRANCH" "$EXT_ARG" "$FORCE" "${PATHS[@]}" <<'PYTHON'
 import sys, subprocess, os, re, datetime
 output_arg     = sys.argv[1]
 remote         = sys.argv[2]
@@ -93,7 +95,8 @@ title_arg      = sys.argv[6]
 repo_root      = sys.argv[7]
 current_branch = sys.argv[8]
 ext_arg        = sys.argv[9]
-paths          = sys.argv[10:]
+force          = sys.argv[10] == '1'
+paths          = sys.argv[11:]
 repo_name      = os.path.basename(repo_root)
 
 def web_url(url):
@@ -200,6 +203,10 @@ elif filter_parts:
 else:
     output = os.path.join(repo_root, 'CHANGELOG.md')
 
+# Überschreibschutz, gilt nicht für die Standardausgabe (-o -)
+if output != '-' and os.path.exists(output) and not force:
+    fail(f"Ausgabedatei existiert bereits: {output} (mit -f überschreiben)")
+
 # Quelle: der Branch, aus dessen Historie das Fenster geholt wird
 if branch:
     if not is_branch(branch):
@@ -296,10 +303,13 @@ for date, ents in groups.items():
         lines.append(f"- {e['msg']}{commit_link(e['hash'])}\n")
     lines.append("\n")
 
-os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
-with open(output, 'w', encoding='utf-8') as f:
-    f.writelines(lines)
-print(f"Changelog generiert: {output}")
+if output == '-':
+    sys.stdout.writelines(lines)
+else:
+    os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
+    with open(output, 'w', encoding='utf-8') as f:
+        f.writelines(lines)
+    print(f"Changelog generiert: {output}")
 PYTHON
 
 # Exit-Code von Python weitergeben
