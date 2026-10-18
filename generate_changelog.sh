@@ -144,7 +144,24 @@ groups = OrderedDict()
 for e in entries:
     groups.setdefault(e['date'], []).append(e)
 
-prefix_order = ['Add','Fix','Upd','Chg','Del','Docs','Ref','Mve','Rem','Ren']
+# Typen in Ausgabereihenfolge, alles andere landet unter "sonstige"
+TYPE_ORDER = ['Add','Fix','Chg','Upd','Rem','Docs','Cfg','Fmt','Ref','Ren','Mov']
+# Präfixe aus älteren Historien
+TYPE_ALIASES = {'Del':'Rem', 'Mve':'Mov', 'Ign':'Cfg', 'Dis':'Cfg', 'TryFix':'Fix'}
+# Präfix am Anfang, toleriert alte Schreibweisen: "Fix:", "Fix;", "Chg.", "Add Kommentare"
+TYPE_RE = re.compile(r'^([A-Za-z]+)(?:[:;.]|\s)')
+
+def commit_type(msg):
+    m = TYPE_RE.match(msg)
+    if not m:
+        return None
+    word = m.group(1)
+    word = TYPE_ALIASES.get(word, word)
+    return word if word in TYPE_ORDER else None
+
+def type_rank(msg):
+    t = commit_type(msg)
+    return TYPE_ORDER.index(t) if t else len(TYPE_ORDER)
 
 # Determine title
 if title_arg:
@@ -157,21 +174,14 @@ else:
 
 lines = []
 lines.append(f"# {title}\n")
-lines.append("Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist Add → Fix → Upd → Chg → Del → Docs → Ref → Mve → Rem → Ren → sonstige.\n")
+lines.append("Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist " + " → ".join(TYPE_ORDER) + " → sonstige.\n")
 
 for date, ents in groups.items():
     lines.append(f"## {date}\n")
-    for pref in prefix_order:
-        for e in ents:
-            if e['msg'].startswith(pref + ':') or e['msg'].startswith(pref + ' '):
-                msg = e['msg'].replace('===', '\n  - ===')
-                link = commit_link(e["hash"])
-                lines.append(f"- {msg}{link}\n")
-    for e in ents:
-        if not re.match(r'^(Add|Fix|Upd|Chg|Del|Docs|Ref|Mve|Rem|Ren)[: ]', e['msg']):
-            msg = e['msg'].replace('===', '\n  - ===')
-            link = commit_link(e["hash"])
-            lines.append(f"- {msg}{link}\n")
+    # sorted() ist stabil: innerhalb eines Typs bleibt die Git-Reihenfolge erhalten
+    for e in sorted(ents, key=lambda e: type_rank(e['msg'])):
+        msg = e['msg'].replace('===', '\n  - ===')
+        lines.append(f"- {msg}{commit_link(e['hash'])}\n")
     lines.append("\n")
 
 os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
