@@ -17,6 +17,8 @@ Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die R
 - Chg: Typen und Reihenfolge nach dem neuen Git-Workflow [299d5a6](https://github.com/Fox-Alpha/godot-changelog-generator/commit/299d5a6)
 - Upd: Hilfetext an die neue Parameterlogik angepasst [f2d740a](https://github.com/Fox-Alpha/godot-changelog-generator/commit/f2d740a)
 - Rem: toten Code hinter dem ersten exit 0 [f6e8cd1](https://github.com/Fox-Alpha/godot-changelog-generator/commit/f6e8cd1)
+- Docs: Teststand und offene Abschlusspunkte im Update-Plan [73d47d5](https://github.com/Fox-Alpha/godot-changelog-generator/commit/73d47d5)
+- Docs: CHANGELOG.md mit dem Tool neu erzeugt [e8f4d94](https://github.com/Fox-Alpha/godot-changelog-generator/commit/e8f4d94)
 - Docs: usage.md an die neue Parameterlogik angepasst [6ac92ae](https://github.com/Fox-Alpha/godot-changelog-generator/commit/6ac92ae)
 - Docs: README an die neue Parameterlogik angepasst [3ee6953](https://github.com/Fox-Alpha/godot-changelog-generator/commit/3ee6953)
 - Docs: Parameterkonzept im Update-Plan abgeschlossen [e5ba669](https://github.com/Fox-Alpha/godot-changelog-generator/commit/e5ba669)
