@@ -4,34 +4,75 @@
 VERSION="2.0.0"
 
 usage() {
+    local n
+    n=$(basename "$0")
     cat <<EOF
-Usage: $(basename "$0") [OPTIONEN]
+Aufruf: $n [OPTIONEN]
 
-Generiert ein Markdown-Changelog aus der Git-Historie.
-Commits werden nach Datum gruppiert und innerhalb eines Datums nach Typ sortiert.
+Erzeugt aus der Git-Historie einen Markdown-Changelog oder Release-Notes.
 
-Optionen:
-  -p, --path <Pfad>     Datei oder Verzeichnis filtern; '-' steht fuer gesamtes Repo
-  -o, --output <Datei>  Ausgabepfad der Markdown-Datei
-                        Standard: abhaengig von --path (siehe unten)
-  -b, --branch <Ref>    Branch oder Tag (Standard: aktueller Branch)
-  -s, --since <Ref>     Commits nach Datum (2026-01-01) oder ab Tag (v1.0.0)
-  -u, --until <Ref>     Commits bis Datum oder Tag
-  -t, --title <Titel>   Ueberschrift in der Ausgabedatei
-                        Standard: Repo-Name + Branch (kein --path), sonst Pfad
-  -h, --help            Diese Hilfe anzeigen
+Quelle und Zeitfenster:
+  -b, --branch <Branch>  Quelle: lokaler oder Remote-Branch (z. B. origin/development).
+                         Standard: aktueller Branch, bei detached HEAD HEAD.
+                         Tags sind nicht erlaubt, ab einem Tag: -s <Tag>.
+  -s, --since <Start>    Beginn: Tag (Tag-Commit ausgeschlossen), Datum JJJJ-MM-TT
+                         (eingeschlossen) oder FIRST. Standard: FIRST (erster Commit)
+  -u, --until <Ende>     Ende: Tag (eingeschlossen), Datum JJJJ-MM-TT (ganzer Tag
+                         eingeschlossen) oder LATEST. Standard: LATEST
+                         Tags müssen in der Historie von -b liegen.
 
-Standard-Ausgabepfade:
-  Kein --path           <repo-root>/docs/CHANGELOG.md
-  --path foo/           <repo-root>/docs/CHANGELOG_foo.md
-  --path bar.sh         <repo-root>/docs/CHANGELOG_bar.md
+Filter:
+  -p, --path <Pfad> ...  ein oder mehrere Pfade (Dateien oder Verzeichnisse), relativ
+                         zum Aufrufverzeichnis. Alle Argumente bis zur nächsten Option
+                         gelten als Pfade; Pfade mit '-' am Anfang als ./-name.
+  -e, --ext <Endungen>   Dateiendungen kommagetrennt ohne Punkt, z. B. gd,tscn.
+                         Kombinierbar mit -p.
+
+Ausgabe:
+  -r, --release          Release-Notes statt vollständigem Changelog
+  -o, --output <Datei>   Ausgabedatei relativ zum Aufrufverzeichnis, '-' = Standardausgabe
+  -f, --force            vorhandene Ausgabedatei überschreiben
+  -t, --title <Titel>    Überschrift. Standard: <Repo> (<Branch>), bei -r <Repo> <Version>,
+                         ergänzt um die Filter von -p/-e
+
+  -V, --version          Version anzeigen
+  -h, --help             diese Hilfe anzeigen
+
+Standard-Ausgabepfade (ohne -o):
+  ohne Filter            <repo-root>/CHANGELOG.md
+  -p src/player/         <repo-root>/docs/CHANGELOG_src_player.md
+  -p src/a.gd -e gd      <repo-root>/docs/CHANGELOG_src_a_gd.md (Dateiendung des Pfads entfällt)
+  -e gd,tscn             <repo-root>/docs/CHANGELOG_gd_tscn.md
+  -r -u v1.2.0           <repo-root>/docs/releases/v1.2.0.md
+  -r ohne Tag in -u      <repo-root>/docs/releases/unreleased.md (Filter werden angehängt)
+  Existiert die Datei, bricht das Script ohne -f ab.
+
+Inhalt:
+  - Datum ist das Autordatum, Grenzen mit Datum beziehen sich ebenfalls darauf.
+  - Merge-Commits werden ausgeblendet, ihre Commits erscheinen einzeln.
+  - Je Commit zählt nur die erste Zeile der Message.
+  - Changelog: nach Datum gegliedert, je Datum nach Typ sortiert:
+    Add, Fix, Chg, Upd, Rem, Docs, Cfg, Fmt, Ref, Ren, Mov, sonstige.
+    Alte Präfixe: Del=Rem, Mve=Mov, Ign=Cfg, Dis=Cfg, TryFix=Fix.
+  - Release-Notes: nur Add, Fix, Chg, Upd, Rem, nach Typ gegliedert. Der Git-Trailer
+    "Release: skip" blendet einen Commit aus, "Release: show" nimmt ihn auf.
+  - Links auf Commits entstehen aus remote.origin.url (GitHub, GitLab o. Ä.),
+    ohne Remote steht nur der Hash.
+  - Pfadfilter gelten für den Pfad im jeweiligen Commit: Commits vor einem Verschieben
+    oder Umbenennen fallen heraus.
+
+Exit-Codes:
+  0  Datei erzeugt, oder keine Treffer (Hinweis auf stderr, keine Datei)
+  1  Fehler, z. B. unbekannte Option, Tag nicht in der Historie, -s nach -u,
+     Ausgabedatei existiert
 
 Beispiele:
-  $(basename "$0")
-  $(basename "$0") -p src/player/ -b development
-  $(basename "$0") -s 2026-01-01 -u 2026-03-31 -o docs/CHANGELOG_Q1.md
-  $(basename "$0") --since v1.0.0 --until v1.1.0 -o docs/CHANGELOG_v1.1.md
-  $(basename "$0") -t "Release v2.0" -o docs/CHANGELOG_v2.0.md
+  $n
+  $n -b development -s v1.0.0
+  $n -s 2026-01-01 -u 2026-03-31 -o docs/CHANGELOG_Q1.md
+  $n -p src/player/ src/enemy/ -e gd
+  $n -r -s v1.0.0 -u v1.1.0
+  $n -r -o - | less
 EOF
 }
 
