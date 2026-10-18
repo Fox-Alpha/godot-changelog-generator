@@ -108,7 +108,8 @@ repo_url = web_url(remote)
 def commit_link(h):
     return f" [{h}]({repo_url}/commit/{h})" if repo_url else f" {h}"
 
-cmd = ['git','log','--no-merges','--pretty=format:%ad|%h|%s','--date=short']
+# Felder mit %x1f, Commits mit %x1e trennen: der Betreff kann '|' enthalten
+cmd = ['git','log','--no-merges','--pretty=format:%ad%x1f%h%x1f%B%x1e','--date=short']
 if branch:
     cmd += [branch]
 if since:
@@ -133,10 +134,14 @@ if proc.returncode != 0 or not proc.stdout.strip():
     sys.exit(0)
 
 entries = []
-for line in proc.stdout.splitlines():
-    parts = line.split('|',2)
+for record in proc.stdout.split('\x1e'):
+    parts = record.lstrip('\n').split('\x1f', 2)
     if len(parts) < 3: continue
-    entries.append({'date':parts[0],'hash':parts[1],'msg':parts[2]})
+    # Nur die erste Zeile: %s würde bei Commits ohne Leerzeile nach dem Betreff
+    # den ganzen ersten Absatz zusammenfassen
+    body = parts[2].strip()
+    msg = body.splitlines()[0].strip() if body else ''
+    entries.append({'date':parts[0],'hash':parts[1],'msg':msg})
 
 # group by date preserving order
 from collections import OrderedDict
@@ -180,8 +185,7 @@ for date, ents in groups.items():
     lines.append(f"## {date}\n")
     # sorted() ist stabil: innerhalb eines Typs bleibt die Git-Reihenfolge erhalten
     for e in sorted(ents, key=lambda e: type_rank(e['msg'])):
-        msg = e['msg'].replace('===', '\n  - ===')
-        lines.append(f"- {msg}{commit_link(e['hash'])}\n")
+        lines.append(f"- {e['msg']}{commit_link(e['hash'])}\n")
     lines.append("\n")
 
 os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
