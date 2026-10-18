@@ -357,7 +357,12 @@ else:
         lines.append("\n")
 
 if output == '-':
-    sys.stdout.writelines(lines)
+    try:
+        sys.stdout.writelines(lines)
+        sys.stdout.flush()
+    except BrokenPipeError:
+        # Leser hat vorzeitig beendet (z. B. | head), restliche Ausgabe verwerfen
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
 else:
     os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
     with open(output, 'w', encoding='utf-8') as f:
