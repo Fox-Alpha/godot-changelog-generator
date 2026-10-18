@@ -23,6 +23,16 @@ erzeugt. Keine weiteren Abhängigkeiten außer Git, Bash und Python 3.
 - Ändert sich der Workflow im Template, prüfen, ob `docs/commit-types.md` und das Script nachgezogen werden müssen.
 - `docs/dev/` gehört nicht in die Release-Archive (`.gitattributes`), Nutzer-Doku liegt direkt in `docs/`.
 
+## Release-Trailer
+
+Regeln im Workflow, Abschnitt „Release-Notes“. In diesem Repo:
+
+- `Release: show`: `Docs:` an der Nutzer-Doku (`README.md`, `LICENSE`, `docs/*.md` ohne `docs/dev/`) und `Cfg:`,
+  die den Inhalt der Release-Archive ändern (`.gitattributes`)
+- `Release: skip`: `Upd: Version x.y.z` und Fixes an Fehlern aus dem noch nicht veröffentlichten Stand
+- ohne Trailer, also intern: `CHANGELOG.md` neu erzeugt, `UPDATE-PLAN.md`, `CLAUDE.md`, `docs/dev/`
+- Den Trailer im selben Block wie `Co-Authored-By:` setzen, ohne Leerzeile dazwischen.
+
 ## Sprache
 
 - Antworten und Code-Kommentare auf Deutsch.
