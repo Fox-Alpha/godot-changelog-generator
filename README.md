@@ -22,16 +22,34 @@ Release-Notes sind nach Typ gegliedert.
 
 ## Installation
 
+Empfohlen ist die Installation als Git-Unterbefehl `git chlog`. Git führt jedes Programm namens `git-<name>` im
+`PATH` als `git <name>` aus. Das Script liegt dabei in einem eigenen Ordner für freigegebene Versionen und nicht im
+Arbeitsstand des Repos, damit Branch-Wechsel und halbfertige Änderungen das installierte Tool nicht verändern.
+
+Aus einem Klon des Repos, `<tag>` ist der Release-Tag der gewünschten Version, z. B. `v2.1.0`:
+
 ```bash
-# Repository klonen, dann ausführbar machen
-chmod +x generate_changelog.sh
+mkdir -p ~/.local/lib/tools/changelog-generator
+git -C <pfad-zum-klon> show <tag>:generate_changelog.sh > ~/.local/lib/tools/changelog-generator/generate_changelog.sh
+chmod 755 ~/.local/lib/tools/changelog-generator/generate_changelog.sh
+ln -s ~/.local/lib/tools/changelog-generator/generate_changelog.sh ~/.local/bin/git-chlog
 ```
+
+Ohne Klon geht es genauso mit `generate_changelog.sh` aus den Anhängen eines
+[Releases](https://github.com/Fox-Alpha/godot-changelog-generator/releases). `~/.local/bin` muss im `PATH` liegen.
+Prüfen mit `git chlog -V`.
+
+**Aktualisieren:** die Datei im Ordner mit dem Stand des neuen Tags überschreiben, der Link bleibt.
 
 ## Verwendung
 
 ```bash
+git chlog [OPTIONEN]
+# oder ohne Installation
 ./generate_changelog.sh [OPTIONEN]
 ```
+
+Hilfe mit `git chlog -h`. `git chlog --help` sucht stattdessen eine Manpage `git-chlog`, die es nicht gibt.
 
 | Option | Kurzform | Beschreibung | Standard |
 |---|---|---|---|
