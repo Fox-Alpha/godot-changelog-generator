@@ -8,10 +8,21 @@ wird dieses Script an den neuen Workflow angepasst. Die Datei kann nach der Umse
 
 - Repo: `git@github.com:Fox-Alpha/godot-changelog-generator.git`, nur Branch `main`, sauber, Stand `b1e9897`.
 - `generate_changelog.sh` (261 Zeilen) ist identisch mit der alten Kopie im Monorepo `godot-tool-sammelsurium`.
-- `~/.local/bin/gitchggen` zeigt auf diesem Rechner noch auf die Kopie im Monorepo
-  (`~/Projekte/Godot/godot-tool-sammelsurium/changelog_generator/generate_changelog.sh`).
+- `~/.local/bin/gitchggen` zeigt auf beiden Rechnern noch auf die Kopie im Monorepo (Pfade siehe unten).
 - Keine `CLAUDE.md` oder `AGENTS.md`: Die Regeln aus dem neuen Workflow greifen hier noch nicht.
 - Commit-Messages bisher auf Englisch, `CHANGELOG.md` im Keep-a-Changelog-Format (Deutsch, Versionen 0.1.0 und 1.0.0).
+
+## Rechner und Pfade
+
+Gearbeitet wird auf zwei Rechnern mit unterschiedlicher Ordnerstruktur. Pfadangaben in diesem Plan
+(`Multiplayer-Template/…`) beziehen sich auf den jeweiligen Ordner des Rechners.
+
+| | Rechner mit `~/Projekte` | Rechner `zocker-nix` (`~/Development`) |
+|---|---|---|
+| dieses Repo | `~/Projekte/ai/godot/godot-changelog-generator` | `~/Development/godot/00.tools/godot-changelog-generator` |
+| Multiplayer-Template | `~/Projekte/ai/godot/Multiplayer-Template` | `~/Development/godot/01.featured-projects/multiplayer-template` |
+| Ziel von `~/.local/bin/gitchggen` | `~/Projekte/Godot/godot-tool-sammelsurium/changelog_generator/generate_changelog.sh` | `~/Projekte/godot/godot-tool-sammelsurium/changelog_generator/generate_changelog.sh` (Ziel existiert nicht mehr, Link ist tot) |
+| git-cliff | `~/.cargo/bin/git-cliff` | nicht installiert |
 
 ## Phase 0 – Vorbereitung (vor jeder Code-Änderung)
 
