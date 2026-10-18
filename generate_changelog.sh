@@ -108,7 +108,9 @@ repo_url = web_url(remote)
 def commit_link(h):
     return f" [{h}]({repo_url}/commit/{h})" if repo_url else f" {h}"
 
-# Felder mit %x1f, Commits mit %x1e trennen: der Betreff kann '|' enthalten
+# Felder mit %x1f, Commits mit %x1e trennen: der Betreff kann '|' enthalten.
+# Autordatum (%ad) statt Commit-Datum (%cd): Sonst würden rebaste oder per
+# Cherry-Pick übernommene Commits dem Tag des Rebase zugeordnet.
 cmd = ['git','log','--no-merges','--pretty=format:%ad%x1f%h%x1f%B%x1e','--date=short']
 if branch:
     cmd += [branch]
