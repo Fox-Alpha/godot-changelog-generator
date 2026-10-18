@@ -106,10 +106,10 @@ keine Ausgabe (Hinweis auf stderr, keine Datei).
 
 | Parameter | Bedeutung | Werte | Standard |
 |---|---|---|---|
-| `-b <Branch>` | Quelle | Branch | aktueller Branch |
+| `-b <Branch>` | Quelle | lokaler oder Remote-Branch (`origin/development`) | aktueller Branch, bei detached HEAD `HEAD` |
 | `-s <Start>` | Beginn des Fensters | Tag (ausgeschlossen), Datum (eingeschlossen), `FIRST` | `FIRST` (erster Commit) |
 | `-u <Ende>` | Ende des Fensters, immer der Endpunkt | Tag, Datum (eingeschlossen, bis 23:59:59), `LATEST` | `LATEST` (letzter Commit von `-b`) |
-| `-p <Pfad> [<Pfad> …]` | Filter auf Pfade, muss letzter Parameter sein | ein oder mehrere Pfade, durch Leerzeichen getrennt | ganzes Repo |
+| `-p <Pfad> [<Pfad> …]` | Filter auf Pfade, nimmt alle Argumente bis zur nächsten Option (beginnt mit `-`) | ein oder mehrere Pfade, durch Leerzeichen getrennt | ganzes Repo |
 | `-e <Endungen>` | Filter auf Dateitypen, kombinierbar mit `-p` | kommagetrennt ohne Punkt, z. B. `gd,tscn` | alle |
 | `-o <Datei>` | Ausgabedatei, relativ zum Aufrufverzeichnis, `-` = Standardausgabe | Pfad oder `-` | siehe unten |
 | `-t <Titel>` | Überschrift | Text | Repo-Name (Branch), bei `-p` zusätzlich die Pfade |
@@ -121,6 +121,15 @@ keine Ausgabe (Hinweis auf stderr, keine Datei).
 Entschieden: `-b` nimmt nur Branches (ab Tag → `-s <Tag>`), `-s`/`-u` haben die Standardwerte `FIRST`/`LATEST`, `-e`
 für Dateitypen.
 
+Entschieden am 2026-10-18:
+- `-b` nimmt lokale und Remote-Branches, Tags und Commit-Hashes werden mit Fehler abgelehnt. Ohne `-b` bei
+  detached HEAD ist die Quelle `HEAD`, der Standardtitel lautet `<Repo> (HEAD)`.
+- `-p` nimmt alle folgenden Argumente bis zum nächsten, das mit `-` beginnt, und muss deshalb nicht am Ende stehen:
+  `-p src/a src/b -e gd -o x.md`. Pfade, die mit `-` beginnen, gehen mit `./-name`.
+- `-r` ist mit `-p`/`-e` kombinierbar, der Filter kommt nach derselben Regel wie beim Changelog in den Dateinamen
+  (siehe Ausgabepfade).
+- Die Detailregeln unten gelten wie vorgeschlagen.
+
 Ausgabepfade:
 - vollständiger Changelog: `<repo-root>/CHANGELOG.md`
 - mit `-p`: `<repo-root>/docs/CHANGELOG_<pfade>.md`, Pfad mit `_` statt `/`, Dateiendung entfällt, z. B.
@@ -129,9 +138,10 @@ Ausgabepfade:
 - mit `-e`: Endungen angehängt, z. B. `-p src/scenes/player/ -e gd` → `docs/CHANGELOG_src_scenes_player_gd.md`,
   nur `-e gd,tscn` → `docs/CHANGELOG_gd_tscn.md`
 - Release-Notes (`-r`): `<repo-root>/docs/releases/<Version>.md`, Version aus `-u`, wenn es ein Tag ist, sonst
-  `unreleased.md`
+  `unreleased.md`. Mit `-p`/`-e` wird der Filter angehängt, z. B. `docs/releases/v2.0.0_src_player_gd.md`,
+  `docs/releases/unreleased_gd.md`
 
-Detailregeln (Vorschlag, gelten, wenn nichts anderes entschieden wird):
+Detailregeln (entschieden am 2026-10-18):
 - `-s <Tag>` schließt den Tag-Commit aus (Änderungen *seit* dem Release), `-u <Tag>` schließt ihn ein.
 - `-s <Datum>` und `-u <Datum>` schließen den Tag ein (00:00:00 bis 23:59:59 Ortszeit).
 - `-s` nach `-u` oder eine Grenze, die nicht in der Historie von `-b` liegt: Hinweis auf stderr, keine Datei,
@@ -192,7 +202,7 @@ Nur lesend gegen das Repo Multiplayer-Template, Ausgaben in den Scratchpad:
 2. **Commit-Sprache:** entschieden – ab jetzt Deutsch.
 3. **Release-Notes:** entschieden – nach Typ gruppiert, Zeitraum und Anzahl im Kopf, kein Datum je Eintrag (Variante B).
    Das vollständige Changelog enthält die Daten.
-4. **Parameter und Ausgabepfade:** in Abstimmung, siehe Abschnitt „Parameterkonzept“.
+4. **Parameter und Ausgabepfade:** entschieden am 2026-10-18, siehe Abschnitt „Parameterkonzept“.
 5. **Versionen:** entschieden – den Ist-Stand (`b1e9897`) vor Beginn taggen, nach den Änderungen einen neuen Tag.
    Die vorhandene `CHANGELOG.md` des Tools ist veraltet (Keep-a-Changelog-Format von Hand, keine Präfixe aus der
    Historie, Versionen ohne Tags). Sie wird nach der Anpassung mit dem Tool selbst neu erzeugt.
