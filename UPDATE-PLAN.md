@@ -189,12 +189,27 @@ Nur lesend gegen das Repo Multiplayer-Template, Ausgaben in den Scratchpad:
   `--trailer "Release: skip"` usw.), nie im echten Repo.
 - Dieses Repo selbst: Ausgabe mit englischen Messages und ohne Remote-Links (Fallback ohne Remote).
 
+Stand 2026-10-18 (Rechner `zocker-nix`, Template-Branch `development`):
+- erledigt: 275 Einträge = `git log --no-merges`, 27 Datumsabschnitte, Sonderfälle erkannt, Links korrekt;
+  Bereiche `-s`/`-u` mit Tags und Datum, `-e`, `-p` mit `-e` stimmen mit `git log` überein (z. B.
+  `-s Godot_Engine_4.6_beta_1`: 101); Trailer, Fehlerfälle und Ausgabepfade in Wegwerf-Repos geprüft
+- übersprungen: Vergleich mit git-cliff (auf `zocker-nix` nicht installiert). Ob er noch nötig ist, ist offen;
+  bei Bedarf auf dem Rechner mit `~/Projekte` nachholen.
+
 ## Phase 4 – Abschluss
 
 - Merge `feature/workflow-anpassung` → `development` → `main` nur nach Freigabe, Versions-Tag setzen.
-- `~/.local/bin/gitchggen` auf dieses Repo umstellen (Freigabe nötig, auf dem zweiten PC ebenfalls).
+  - erledigt 2026-10-18: Merge nach `development` (`768f0d5`, lokal), Feature-Branch lokal und auf dem Remote
+    gelöscht
+  - offen: `CHANGELOG.md` neu erzeugen, Merge nach `main`, Tag `v2.0.0`, danach `development`, `main` und Tag
+    pushen (nötig für den zweiten Rechner)
+- `~/.local/bin/gitchggen` umstellen (Freigabe nötig, auf dem zweiten PC ebenfalls). Ziel noch offen, wird ganz am
+  Ende entschieden. Vorschlag: nicht direkt ins Repo zeigen (bricht bei Branch-Wechseln und halbfertigen Ständen),
+  sondern auf einen eigenen Ordner für freigegebene Tool-Versionen, z. B. `~/.local/lib/tools/`, in den der
+  getaggte Stand kopiert wird.
 - Im Multiplayer-Template: Branch `feature/git-cliff` löschen, `CHANGELOG.md` neu erzeugen und committen,
-  Notiz in `docs/notes/tooling-anpassungen.md` abschließen.
+  Notiz in `docs/notes/tooling-anpassungen.md` abschließen. `feature/git-cliff` erst löschen, wenn feststeht, dass
+  der git-cliff-Vergleich (Phase 3) entfällt, der Branch ist dafür die Referenz.
 
 ## Entscheidungen und offene Fragen
 
