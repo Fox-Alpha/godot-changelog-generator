@@ -3,18 +3,10 @@
 Beispiele, Ausgabeformat und Einschränkungen von `generate_changelog.sh`. Die Optionen stehen im
 [README](../README.md) und in `generate_changelog.sh --help`.
 
-## Commit-Typen und Sortierung
+## Commit-Typen
 
-Die Typen kommen aus dem [Git-Workflow](dev/workflow.md). Im Changelog werden die Commits innerhalb eines Datums in
-dieser Reihenfolge sortiert:
-
-`Add` → `Fix` → `Chg` → `Upd` → `Rem` → `Docs` → `Cfg` → `Fmt` → `Ref` → `Ren` → `Mov` → sonstige
-
-- Commits ohne erkannten Typ stehen am Ende des Datumsblocks bzw. unter „Sonstige“.
-- Präfixe aus älteren Historien werden zugeordnet: `Del` → `Rem`, `Mve` → `Mov`, `Ign` → `Cfg`, `Dis` → `Cfg`,
-  `TryFix` → `Fix`.
-- Alte Schreibweisen werden erkannt: `Fix:`, `Fix;`, `Chg.` und Präfix ohne Doppelpunkt (`Add Kommentare`).
-- Die Groß- und Kleinschreibung zählt: `fix:` ist kein Typ.
+Welche Typen das Tool erkennt, in welcher Reihenfolge sie erscheinen, welche in den Release-Notes sichtbar sind und
+wie der Trailer `Release: skip`/`show` wirkt, steht in [Commit-Typen](commit-types.md).
 
 ## Was ausgewertet wird
 
@@ -115,7 +107,7 @@ Das Ausgabeverzeichnis wird bei Bedarf angelegt. Ohne `-f` bricht das Script ab,
 ```markdown
 # godot-changelog-generator (main)
 
-Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist Add → Fix → Chg → Upd → Rem → Docs → Cfg → Fmt → Ref → Ren → Mov → sonstige.
+Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist Add → Chg → Upd → Ref → Rem → Fix → Docs → Ren → Mov → Cfg → Fmt → sonstige.
 
 ## 2026-10-18
 
@@ -137,32 +129,19 @@ Der Changelog zeigt alle Commits, unabhängig von Typ und Release-Trailer.
 
 - Release-Notes mit -r/--release ([c66f0b0](https://github.com/owner/repo/commit/c66f0b0))
 
-### Fix
-
-- Commit-Links aus SSH-Remote-URLs fehlerhaft ([b6e8626](https://github.com/owner/repo/commit/b6e8626))
-
 ### Chg
 
 - Merge-Commits im Changelog ausblenden ([98953d0](https://github.com/owner/repo/commit/98953d0))
+
+### Fix
+
+- Commit-Links aus SSH-Remote-URLs fehlerhaft ([b6e8626](https://github.com/owner/repo/commit/b6e8626))
 ```
 
-- Nur die sichtbaren Typen `Add`, `Fix`, `Chg`, `Upd`, `Rem`.
+- Nur die sichtbaren Typen `Add`, `Chg`, `Upd`, `Rem`, `Fix`.
 - Der Präfix steht unter der Typ-Überschrift nicht noch einmal im Eintrag.
 - Kein Datum je Eintrag, der Zeitraum steht im Kopf. Die Daten je Commit stehen im Changelog.
-
-### Release-Trailer
-
-Mit einem Git-Trailer in der letzten Zeile des Bodys lässt sich der Typ übersteuern:
-
-```text
-Fix: Tippfehler im Log-Aufruf
-
-Release: skip
-```
-
-- `Release: skip` blendet einen sonst sichtbaren Commit aus.
-- `Release: show` nimmt einen sonst internen Commit auf. Ohne erkannten Typ erscheint er unter „Sonstige“.
-- Setzen mit `git commit --trailer "Release: skip"`.
+- Der Trailer `Release: skip`/`show` übersteuert die Sichtbarkeit, siehe [Commit-Typen](commit-types.md#release-trailer).
 
 ## Einschränkungen
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Generiert ein Markdown-Changelog aus der Git-Historie.
 
-VERSION="2.0.0"
+VERSION="2.1.0"
 
 usage() {
     local n
@@ -52,9 +52,9 @@ Inhalt:
   - Merge-Commits werden ausgeblendet, ihre Commits erscheinen einzeln.
   - Je Commit zählt nur die erste Zeile der Message.
   - Changelog: nach Datum gegliedert, je Datum nach Typ sortiert:
-    Add, Fix, Chg, Upd, Rem, Docs, Cfg, Fmt, Ref, Ren, Mov, sonstige.
+    Add, Chg, Upd, Ref, Rem, Fix, Docs, Ren, Mov, Cfg, Fmt, sonstige.
     Alte Präfixe: Del=Rem, Mve=Mov, Ign=Cfg, Dis=Cfg, TryFix=Fix.
-  - Release-Notes: nur Add, Fix, Chg, Upd, Rem, nach Typ gegliedert. Der Git-Trailer
+  - Release-Notes: nur Add, Chg, Upd, Rem, Fix, nach Typ gegliedert. Der Git-Trailer
     "Release: skip" blendet einen Commit aus, "Release: show" nimmt ihn auf.
   - Links auf Commits entstehen aus remote.origin.url (GitHub, GitLab o. Ä.),
     ohne Remote steht nur der Hash.
@@ -315,7 +315,7 @@ for record in proc.stdout.split('\x1e'):
     entries.append({'date':date,'hash':h,'msg':msg,'release':release_mark})
 
 # Typen in Ausgabereihenfolge, alles andere landet unter "sonstige"
-TYPE_ORDER = ['Add','Fix','Chg','Upd','Rem','Docs','Cfg','Fmt','Ref','Ren','Mov']
+TYPE_ORDER = ['Add','Chg','Upd','Ref','Rem','Fix','Docs','Ren','Mov','Cfg','Fmt']
 # Präfixe aus älteren Historien
 TYPE_ALIASES = {'Del':'Rem', 'Mve':'Mov', 'Ign':'Cfg', 'Dis':'Cfg', 'TryFix':'Fix'}
 # Präfix am Anfang, toleriert alte Schreibweisen: "Fix:", "Fix;", "Chg.", "Add Kommentare"
@@ -334,7 +334,7 @@ def type_rank(msg):
     return TYPE_ORDER.index(t) if t else len(TYPE_ORDER)
 
 # In Release-Notes erscheinende Typen
-VISIBLE_TYPES = ['Add','Fix','Chg','Upd','Rem']
+VISIBLE_TYPES = ['Add','Chg','Upd','Rem','Fix']
 
 def in_release(e):
     """Der Trailer 'Release: skip/show' hat Vorrang vor dem Typ."""
