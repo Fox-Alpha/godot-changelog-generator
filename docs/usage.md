@@ -6,9 +6,9 @@ Beispiele, Ausgabeformat und Einschränkungen von `generate_changelog.sh`. Die O
 ## Commit-Typen und Sortierung
 
 Die Typen kommen aus dem [Git-Workflow](dev/workflow.md). Im Changelog werden die Commits innerhalb eines Datums in
-dieser Reihenfolge sortiert:
+dieser Reihenfolge sortiert, die Release-Notes sind in derselben Reihenfolge gegliedert:
 
-`Add` → `Fix` → `Chg` → `Upd` → `Rem` → `Docs` → `Cfg` → `Fmt` → `Ref` → `Ren` → `Mov` → sonstige
+`Add` → `Chg` → `Upd` → `Ref` → `Rem` → `Fix` → `Docs` → `Ren` → `Mov` → `Cfg` → `Fmt` → sonstige
 
 - Commits ohne erkannten Typ stehen am Ende des Datumsblocks bzw. unter „Sonstige“.
 - Präfixe aus älteren Historien werden zugeordnet: `Del` → `Rem`, `Mve` → `Mov`, `Ign` → `Cfg`, `Dis` → `Cfg`,
@@ -115,7 +115,7 @@ Das Ausgabeverzeichnis wird bei Bedarf angelegt. Ohne `-f` bricht das Script ab,
 ```markdown
 # godot-changelog-generator (main)
 
-Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist Add → Fix → Chg → Upd → Rem → Docs → Cfg → Fmt → Ref → Ren → Mov → sonstige.
+Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist Add → Chg → Upd → Ref → Rem → Fix → Docs → Ren → Mov → Cfg → Fmt → sonstige.
 
 ## 2026-10-18
 
@@ -137,16 +137,16 @@ Der Changelog zeigt alle Commits, unabhängig von Typ und Release-Trailer.
 
 - Release-Notes mit -r/--release ([c66f0b0](https://github.com/owner/repo/commit/c66f0b0))
 
-### Fix
-
-- Commit-Links aus SSH-Remote-URLs fehlerhaft ([b6e8626](https://github.com/owner/repo/commit/b6e8626))
-
 ### Chg
 
 - Merge-Commits im Changelog ausblenden ([98953d0](https://github.com/owner/repo/commit/98953d0))
+
+### Fix
+
+- Commit-Links aus SSH-Remote-URLs fehlerhaft ([b6e8626](https://github.com/owner/repo/commit/b6e8626))
 ```
 
-- Nur die sichtbaren Typen `Add`, `Fix`, `Chg`, `Upd`, `Rem`.
+- Nur die sichtbaren Typen `Add`, `Chg`, `Upd`, `Rem`, `Fix`.
 - Der Präfix steht unter der Typ-Überschrift nicht noch einmal im Eintrag.
 - Kein Datum je Eintrag, der Zeitraum steht im Kopf. Die Daten je Commit stehen im Changelog.
 
