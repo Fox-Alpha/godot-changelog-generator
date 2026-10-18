@@ -43,6 +43,7 @@ SINCE_ARG=""
 UNTIL_ARG=""
 TITLE_ARG=""
 FORCE=0
+RELEASE=0
 
 # Bricht ab, wenn eine Option ohne Wert am Ende steht
 need_value() {
@@ -70,6 +71,7 @@ while [[ $# -gt 0 ]]; do
         -u|--until)  need_value "$@"; UNTIL_ARG="$2";  shift 2 ;;
         -t|--title)  need_value "$@"; TITLE_ARG="$2";  shift 2 ;;
         -f|--force)  FORCE=1; shift ;;
+        -r|--release) RELEASE=1; shift ;;
         -V|--version) echo "$(basename "$0") $VERSION"; exit 0 ;;
         -h|--help)   usage; exit 0 ;;
         *) echo "Unbekannte Option: $1" >&2; usage >&2; exit 1 ;;
@@ -87,7 +89,7 @@ CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
 
 # Pfade kommen als letzte Argumente, ihre Anzahl ist beliebig
 python3 - "$OUTPUT_ARG" "$REMOTE" "$BRANCH_ARG" "$SINCE_ARG" "$UNTIL_ARG" "$TITLE_ARG" \
-    "$REPO_ROOT" "$CURRENT_BRANCH" "$EXT_ARG" "$FORCE" "${PATHS[@]}" <<'PYTHON'
+    "$REPO_ROOT" "$CURRENT_BRANCH" "$EXT_ARG" "$FORCE" "$RELEASE" "${PATHS[@]}" <<'PYTHON'
 import sys, subprocess, os, re, datetime
 output_arg     = sys.argv[1]
 remote         = sys.argv[2]
@@ -99,7 +101,8 @@ repo_root      = sys.argv[7]
 current_branch = sys.argv[8]
 ext_arg        = sys.argv[9]
 force          = sys.argv[10] == '1'
-paths          = sys.argv[11:]
+release        = sys.argv[11] == '1'
+paths          = sys.argv[12:]
 repo_name      = os.path.basename(repo_root)
 
 def web_url(url):
@@ -195,20 +198,11 @@ def path_label(path):
     return re.sub(r'[\\/]+', '_', rel.strip('/')).strip('_.') or 'root'
 
 filter_parts = [path_label(p) for p in paths] + exts
-filter_desc = ", ".join(paths)
-if exts:
-    filter_desc += (" " if paths else "") + "(" + ", ".join(f"*.{x}" for x in exts) + ")"
-
-if output_arg:
-    output = output_arg
-elif filter_parts:
-    output = os.path.join(repo_root, 'docs', f"CHANGELOG_{'_'.join(filter_parts)}.md")
+ext_desc = ", ".join(f"*.{x}" for x in exts)
+if paths and exts:
+    filter_desc = f"{', '.join(paths)} ({ext_desc})"
 else:
-    output = os.path.join(repo_root, 'CHANGELOG.md')
-
-# Überschreibschutz, gilt nicht für die Standardausgabe (-o -)
-if output != '-' and os.path.exists(output) and not force:
-    fail(f"Ausgabedatei existiert bereits: {output} (mit -f überschreiben)")
+    filter_desc = ", ".join(paths) or ext_desc
 
 # Quelle: der Branch, aus dessen Historie das Fenster geholt wird
 if branch:
@@ -229,10 +223,29 @@ if start_kind == end_kind == 'tag' and not in_history(start, end):
 if start_kind == end_kind == 'date' and start > end:
     fail(f"-s {start} liegt nach -u {end}")
 
+# Release-Notes: Version aus -u, wenn es ein Tag ist
+version = end if end_kind == 'tag' else 'unreleased'
+
+if output_arg:
+    output = output_arg
+elif release:
+    output = os.path.join(repo_root, 'docs', 'releases', f"{'_'.join([version] + filter_parts)}.md")
+elif filter_parts:
+    output = os.path.join(repo_root, 'docs', f"CHANGELOG_{'_'.join(filter_parts)}.md")
+else:
+    output = os.path.join(repo_root, 'CHANGELOG.md')
+
+# Überschreibschutz, gilt nicht für die Standardausgabe (-o -)
+if output != '-' and os.path.exists(output) and not force:
+    fail(f"Ausgabedatei existiert bereits: {output} (mit -f überschreiben)")
+
 # Felder mit %x1f, Commits mit %x1e trennen: der Betreff kann '|' enthalten.
 # Autordatum (%ad) statt Commit-Datum (%cd): Sonst würden rebaste oder per
 # Cherry-Pick übernommene Commits dem Tag des Rebase zugeordnet.
-cmd = ['git','log','--no-merges','--pretty=format:%ad%x1f%h%x1f%B%x1e','--date=short']
+# Der Release-Trailer steht vor %B, weil der Body beliebigen Text enthalten kann.
+cmd = ['git','log','--no-merges',
+       '--pretty=format:%ad%x1f%h%x1f%(trailers:key=Release,valueonly,separator=%x2c)%x1f%B%x1e',
+       '--date=short']
 # -u <Tag> schließt den Tag-Commit ein, -s <Tag> schließt ihn aus
 cmd += [end if end_kind == 'tag' else source]
 if start_kind == 'tag':
@@ -245,28 +258,20 @@ if proc.returncode != 0:
 
 entries = []
 for record in proc.stdout.split('\x1e'):
-    parts = record.lstrip('\n').split('\x1f', 2)
-    if len(parts) < 3: continue
+    parts = record.lstrip('\n').split('\x1f', 3)
+    if len(parts) < 4: continue
+    date, h, trailer, body = parts
     # Nur die erste Zeile: %s würde bei Commits ohne Leerzeile nach dem Betreff
     # den ganzen ersten Absatz zusammenfassen
-    body = parts[2].strip()
+    body = body.strip()
     msg = body.splitlines()[0].strip() if body else ''
     # Datumsgrenzen auf dem angezeigten Autordatum prüfen, nicht mit --since/--until:
     # die filtern nach dem Commit-Datum. Beide Grenztage sind eingeschlossen.
-    if start_kind == 'date' and parts[0] < start: continue
-    if end_kind == 'date' and parts[0] > end: continue
-    entries.append({'date':parts[0],'hash':parts[1],'msg':msg})
-
-if not entries:
-    label = filter_desc or "das Repository"
-    print(f"Keine Git-Einträge für '{label}' gefunden, keine Datei erzeugt.", file=sys.stderr)
-    sys.exit(0)
-
-# group by date preserving order
-from collections import OrderedDict
-groups = OrderedDict()
-for e in entries:
-    groups.setdefault(e['date'], []).append(e)
+    if start_kind == 'date' and date < start: continue
+    if end_kind == 'date' and date > end: continue
+    # bei mehreren Release-Trailern gilt der letzte
+    release_mark = trailer.split(',')[-1].strip().lower() if trailer.strip() else ''
+    entries.append({'date':date,'hash':h,'msg':msg,'release':release_mark})
 
 # Typen in Ausgabereihenfolge, alles andere landet unter "sonstige"
 TYPE_ORDER = ['Add','Fix','Chg','Upd','Rem','Docs','Cfg','Fmt','Ref','Ren','Mov']
@@ -287,24 +292,69 @@ def type_rank(msg):
     t = commit_type(msg)
     return TYPE_ORDER.index(t) if t else len(TYPE_ORDER)
 
+# In Release-Notes erscheinende Typen
+VISIBLE_TYPES = ['Add','Fix','Chg','Upd','Rem']
+
+def in_release(e):
+    """Der Trailer 'Release: skip/show' hat Vorrang vor dem Typ."""
+    if e['release'] == 'skip':
+        return False
+    if e['release'] == 'show':
+        return True
+    return commit_type(e['msg']) in VISIBLE_TYPES
+
+if release:
+    entries = [e for e in entries if in_release(e)]
+
+if not entries:
+    label = filter_desc or "das Repository"
+    print(f"Keine Git-Einträge für '{label}' gefunden, keine Datei erzeugt.", file=sys.stderr)
+    sys.exit(0)
+
 # Determine title
 if title_arg:
     title = title_arg
 else:
-    title = f"{repo_name} ({source})"
+    title = f"{repo_name} {version}" if release else f"{repo_name} ({source})"
     if filter_desc:
         title += f" – {filter_desc}"
 
-lines = []
-lines.append(f"# {title}\n")
-lines.append("Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist " + " → ".join(TYPE_ORDER) + " → sonstige.\n")
+def strip_type(msg):
+    """Präfix entfernen, unter der Typ-Überschrift steht er nicht noch einmal."""
+    return re.sub(r'^[A-Za-z]+[:;.]?\s*', '', msg, count=1) if commit_type(msg) else msg
 
-for date, ents in groups.items():
-    lines.append(f"## {date}\n")
-    # sorted() ist stabil: innerhalb eines Typs bleibt die Git-Reihenfolge erhalten
-    for e in sorted(ents, key=lambda e: type_rank(e['msg'])):
-        lines.append(f"- {e['msg']}{commit_link(e['hash'])}\n")
-    lines.append("\n")
+def release_link(h):
+    return f" ([{h}]({repo_url}/commit/{h}))" if repo_url else f" ({h})"
+
+lines = []
+if release:
+    # Release-Notes: nach Typ gegliedert, Zeitraum und Anzahl im Kopf
+    dates = sorted(e['date'] for e in entries)
+    period = dates[0] if dates[0] == dates[-1] else f"{dates[0]} – {dates[-1]}"
+    count = f"{len(entries)} Änderung" + ("" if len(entries) == 1 else "en")
+    lines.append(f"## {title}\n\n")
+    lines.append(f"**Zeitraum:** {period} · {count}\n\n")
+    for t in TYPE_ORDER + [None]:
+        ents = [e for e in entries if commit_type(e['msg']) == t]
+        if not ents:
+            continue
+        lines.append(f"### {t or 'Sonstige'}\n")
+        for e in ents:
+            lines.append(f"- {strip_type(e['msg'])}{release_link(e['hash'])}\n")
+        lines.append("\n")
+else:
+    # Vollständiger Changelog: nach Datum gegliedert, je Datum nach Typ sortiert
+    groups = {}
+    for e in entries:
+        groups.setdefault(e['date'], []).append(e)
+    lines.append(f"# {title}\n")
+    lines.append("Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist " + " → ".join(TYPE_ORDER) + " → sonstige.\n")
+    for date, ents in groups.items():
+        lines.append(f"## {date}\n")
+        # sorted() ist stabil: innerhalb eines Typs bleibt die Git-Reihenfolge erhalten
+        for e in sorted(ents, key=lambda e: type_rank(e['msg'])):
+            lines.append(f"- {e['msg']}{commit_link(e['hash'])}\n")
+        lines.append("\n")
 
 if output == '-':
     sys.stdout.writelines(lines)
