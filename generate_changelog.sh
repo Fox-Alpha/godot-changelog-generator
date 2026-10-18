@@ -53,6 +53,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    echo "Fehler: $(pwd) ist kein Git-Repository." >&2
+    exit 1
+fi
+
 REMOTE=$(git config --get remote.origin.url 2>/dev/null || true)
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 REPO_NAME=$(basename "$REPO_ROOT")
@@ -75,7 +80,7 @@ else
 fi
 
 python3 - "$TARGET_TYPE" "$TARGET" "$OUTPUT" "$REMOTE" "$BRANCH_ARG" "$SINCE_ARG" "$UNTIL_ARG" "$TITLE_ARG" "$REPO_NAME" "$CURRENT_BRANCH" <<'PYTHON'
-import sys, subprocess, os, re
+import sys, subprocess, os, re, datetime
 target_type    = sys.argv[1]
 target         = sys.argv[2]
 output         = sys.argv[3]
@@ -108,32 +113,75 @@ repo_url = web_url(remote)
 def commit_link(h):
     return f" [{h}]({repo_url}/commit/{h})" if repo_url else f" {h}"
 
+DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+
+def fail(msg):
+    print(f"Fehler: {msg}", file=sys.stderr)
+    print("Siehe --help.", file=sys.stderr)
+    sys.exit(1)
+
+def git_ok(*args):
+    return subprocess.run(['git', *args], capture_output=True, text=True).returncode == 0
+
+def is_branch(name):
+    return any(git_ok('rev-parse', '--verify', '--quiet', f'{ns}/{name}^{{commit}}')
+               for ns in ('refs/heads', 'refs/remotes'))
+
+def is_tag(name):
+    return git_ok('rev-parse', '--verify', '--quiet', f'refs/tags/{name}^{{commit}}')
+
+def in_history(ref, source):
+    return git_ok('merge-base', '--is-ancestor', ref, source)
+
+def parse_bound(value, option, constant):
+    """Grenze einlesen: ('none', None), ('date', 'JJJJ-MM-TT') oder ('tag', Name)."""
+    if not value or value == constant:
+        return ('none', None)
+    if DATE_RE.match(value):
+        try:
+            datetime.date.fromisoformat(value)
+        except ValueError:
+            fail(f"{option}: unlesbares Datum '{value}'")
+        return ('date', value)
+    if is_tag(value):
+        return ('tag', value)
+    fail(f"{option}: '{value}' ist weder Tag noch Datum (JJJJ-MM-TT) noch {constant}")
+
+# Quelle: der Branch, aus dessen Historie das Fenster geholt wird
+if branch:
+    if not is_branch(branch):
+        fail(f"-b: '{branch}' ist kein lokaler oder Remote-Branch (ab einem Tag: -s <Tag>)")
+    source = branch
+else:
+    source = current_branch or 'HEAD'
+
+start_kind, start = parse_bound(since, '-s', 'FIRST')
+end_kind, end = parse_bound(until, '-u', 'LATEST')
+
+for kind, value, option in ((start_kind, start, '-s'), (end_kind, end, '-u')):
+    if kind == 'tag' and not in_history(value, source):
+        fail(f"{option}: Tag '{value}' liegt nicht in der Historie von '{source}'")
+if start_kind == end_kind == 'tag' and not in_history(start, end):
+    fail(f"-s '{start}' liegt nicht vor -u '{end}'")
+if start_kind == end_kind == 'date' and start > end:
+    fail(f"-s {start} liegt nach -u {end}")
+
 # Felder mit %x1f, Commits mit %x1e trennen: der Betreff kann '|' enthalten.
 # Autordatum (%ad) statt Commit-Datum (%cd): Sonst würden rebaste oder per
 # Cherry-Pick übernommene Commits dem Tag des Rebase zugeordnet.
 cmd = ['git','log','--no-merges','--pretty=format:%ad%x1f%h%x1f%B%x1e','--date=short']
-if branch:
-    cmd += [branch]
-if since:
-    cmd += [f'--since={since}'] if re.match(r'^\d{4}-\d{2}-\d{2}$', since) else [f'{since}..HEAD']
-if until:
-    if re.match(r'^\d{4}-\d{2}-\d{2}$', until):
-        cmd += [f'--until={until}']
-    else:
-        cmd = [f'{since}..{until}' if since and not re.match(r'^\d{4}-\d{2}-\d{2}$', since)
-               else c for c in cmd]
-        if not since or re.match(r'^\d{4}-\d{2}-\d{2}$', since):
-            cmd += [until]
+# -u <Tag> schließt den Tag-Commit ein, -s <Tag> schließt ihn aus
+cmd += [end if end_kind == 'tag' else source]
+if start_kind == 'tag':
+    cmd += [f'^{start}']
 if target_type == "dir":
     cmd += ['--', target + '/']
 elif target_type == "file":
     cmd += ['--', target]
 
 proc = subprocess.run(cmd, capture_output=True, text=True)
-if proc.returncode != 0 or not proc.stdout.strip():
-    label = target if target else "das Repository"
-    print(f"Keine Git-Einträge für '{label}' gefunden.")
-    sys.exit(0)
+if proc.returncode != 0:
+    fail(proc.stderr.strip() or "git log fehlgeschlagen")
 
 entries = []
 for record in proc.stdout.split('\x1e'):
@@ -143,7 +191,16 @@ for record in proc.stdout.split('\x1e'):
     # den ganzen ersten Absatz zusammenfassen
     body = parts[2].strip()
     msg = body.splitlines()[0].strip() if body else ''
+    # Datumsgrenzen auf dem angezeigten Autordatum prüfen, nicht mit --since/--until:
+    # die filtern nach dem Commit-Datum. Beide Grenztage sind eingeschlossen.
+    if start_kind == 'date' and parts[0] < start: continue
+    if end_kind == 'date' and parts[0] > end: continue
     entries.append({'date':parts[0],'hash':parts[1],'msg':msg})
+
+if not entries:
+    label = target if target else "das Repository"
+    print(f"Keine Git-Einträge für '{label}' gefunden, keine Datei erzeugt.", file=sys.stderr)
+    sys.exit(0)
 
 # group by date preserving order
 from collections import OrderedDict
@@ -174,8 +231,7 @@ def type_rank(msg):
 if title_arg:
     title = title_arg
 elif target_type == "all":
-    br = branch if branch else current_branch
-    title = f"{repo_name} ({br})" if br else repo_name
+    title = f"{repo_name} ({source})"
 else:
     title = f"Changelog für {target}"
 
@@ -196,4 +252,5 @@ with open(output, 'w', encoding='utf-8') as f:
 print(f"Changelog generiert: {output}")
 PYTHON
 
-exit 0
+# Exit-Code von Python weitergeben
+exit $?
