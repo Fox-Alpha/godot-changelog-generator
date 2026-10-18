@@ -87,6 +87,27 @@ title_arg      = sys.argv[8]
 repo_name      = sys.argv[9]
 current_branch = sys.argv[10]
 
+def web_url(url):
+    """Remote-URL (SSH oder HTTPS) in die Web-Adresse des Repos umwandeln."""
+    url = url.strip()
+    if not url:
+        return ""
+    m = re.match(r'^[\w.-]+@([^:/]+):(.+)$', url)          # git@github.com:owner/repo.git
+    if m:
+        host, path = m.groups()
+    else:
+        m = re.match(r'^(?:ssh|git|https?)://(?:[^@/]+@)?([^/:]+)(?::\d+)?/(.+)$', url)
+        if not m:
+            return ""
+        host, path = m.groups()
+    path = re.sub(r'\.git/?$', '', path.rstrip('/'))
+    return f"https://{host}/{path}"
+
+repo_url = web_url(remote)
+
+def commit_link(h):
+    return f" [{h}]({repo_url}/commit/{h})" if repo_url else f" {h}"
+
 cmd = ['git','log','--pretty=format:%ad|%h|%s','--date=short']
 if branch:
     cmd += [branch]
@@ -144,12 +165,12 @@ for date, ents in groups.items():
         for e in ents:
             if e['msg'].startswith(pref + ':') or e['msg'].startswith(pref + ' '):
                 msg = e['msg'].replace('===', '\n  - ===')
-                link = f" [{e['hash']}]({remote}/commit/{e['hash']})" if remote else f" {e['hash']}"
+                link = commit_link(e["hash"])
                 lines.append(f"- {msg}{link}\n")
     for e in ents:
         if not re.match(r'^(Add|Fix|Upd|Chg|Del|Docs|Ref|Mve|Rem|Ren)[: ]', e['msg']):
             msg = e['msg'].replace('===', '\n  - ===')
-            link = f" [{e['hash']}]({remote}/commit/{e['hash']})" if remote else f" {e['hash']}"
+            link = commit_link(e["hash"])
             lines.append(f"- {msg}{link}\n")
     lines.append("\n")
 
