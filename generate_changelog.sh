@@ -108,7 +108,7 @@ repo_url = web_url(remote)
 def commit_link(h):
     return f" [{h}]({repo_url}/commit/{h})" if repo_url else f" {h}"
 
-cmd = ['git','log','--pretty=format:%ad|%h|%s','--date=short']
+cmd = ['git','log','--no-merges','--pretty=format:%ad|%h|%s','--date=short']
 if branch:
     cmd += [branch]
 if since:
