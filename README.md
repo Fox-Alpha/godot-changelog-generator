@@ -69,6 +69,10 @@ die Ausgabedatei, bricht das Script ohne `-f` ab. Gibt es keine Treffer, entsteh
 - [Beispiele, Ausgabeformat und Einschränkungen](docs/usage.md)
 - [Git-Workflow mit Commit-Typen](docs/dev/workflow.md)
 
+## Lizenz
+
+[MIT](LICENSE)
+
 ## Part of godot-dev-toolkit
 
 Dieses Tool ist Teil des [godot-dev-toolkit](https://github.com/Fox-Alpha/godot-dev-toolkit) Hubs.
