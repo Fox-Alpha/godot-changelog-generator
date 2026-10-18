@@ -33,21 +33,39 @@ Beispiele:
 EOF
 }
 
-PATH_ARG=""
+PATHS=()
+EXT_ARG=""
 OUTPUT_ARG=""
 BRANCH_ARG=""
 SINCE_ARG=""
 UNTIL_ARG=""
 TITLE_ARG=""
 
+# Bricht ab, wenn eine Option ohne Wert am Ende steht
+need_value() {
+    if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "Fehler: $1 erwartet einen Wert. Siehe --help." >&2
+        exit 1
+    fi
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -p|--path)   PATH_ARG="$2";   shift 2 ;;
-        -o|--output) OUTPUT_ARG="$2"; shift 2 ;;
-        -b|--branch) BRANCH_ARG="$2"; shift 2 ;;
-        -s|--since)  SINCE_ARG="$2";  shift 2 ;;
-        -u|--until)  UNTIL_ARG="$2";  shift 2 ;;
-        -t|--title)  TITLE_ARG="$2";  shift 2 ;;
+        -p|--path)
+            # alle Argumente bis zur nächsten Option sind Pfade
+            shift
+            while [[ $# -gt 0 && "$1" != -* ]]; do PATHS+=("$1"); shift; done
+            if [[ ${#PATHS[@]} -eq 0 ]]; then
+                echo "Fehler: -p erwartet mindestens einen Pfad (Pfade mit '-' am Anfang als ./-name). Siehe --help." >&2
+                exit 1
+            fi
+            ;;
+        -e|--ext)    need_value "$@"; EXT_ARG="$2";    shift 2 ;;
+        -o|--output) need_value "$@"; OUTPUT_ARG="$2"; shift 2 ;;
+        -b|--branch) need_value "$@"; BRANCH_ARG="$2"; shift 2 ;;
+        -s|--since)  need_value "$@"; SINCE_ARG="$2";  shift 2 ;;
+        -u|--until)  need_value "$@"; UNTIL_ARG="$2";  shift 2 ;;
+        -t|--title)  need_value "$@"; TITLE_ARG="$2";  shift 2 ;;
         -h|--help)   usage; exit 0 ;;
         *) echo "Unbekannte Option: $1" >&2; usage >&2; exit 1 ;;
     esac
@@ -59,38 +77,24 @@ if ! git rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 REMOTE=$(git config --get remote.origin.url 2>/dev/null || true)
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-REPO_NAME=$(basename "$REPO_ROOT")
+REPO_ROOT=$(git rev-parse --show-toplevel)
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
-DOCS_DIR="${REPO_ROOT}/docs"
 
-if [ -d "$PATH_ARG" ]; then
-    TARGET_TYPE="dir"
-    TARGET="$PATH_ARG"
-    DIRNAME=$(basename "${PATH_ARG%/}")
-    OUTPUT=${OUTPUT_ARG:-${DOCS_DIR}/CHANGELOG_${DIRNAME}.md}
-elif [ -n "$PATH_ARG" ] && [ "$PATH_ARG" != "-" ]; then
-    TARGET_TYPE="file"
-    TARGET="$PATH_ARG"
-    OUTPUT=${OUTPUT_ARG:-${DOCS_DIR}/CHANGELOG_$(basename "${PATH_ARG%.*}").md}
-else
-    TARGET_TYPE="all"
-    TARGET=""
-    OUTPUT=${OUTPUT_ARG:-${DOCS_DIR}/CHANGELOG.md}
-fi
-
-python3 - "$TARGET_TYPE" "$TARGET" "$OUTPUT" "$REMOTE" "$BRANCH_ARG" "$SINCE_ARG" "$UNTIL_ARG" "$TITLE_ARG" "$REPO_NAME" "$CURRENT_BRANCH" <<'PYTHON'
+# Pfade kommen als letzte Argumente, ihre Anzahl ist beliebig
+python3 - "$OUTPUT_ARG" "$REMOTE" "$BRANCH_ARG" "$SINCE_ARG" "$UNTIL_ARG" "$TITLE_ARG" \
+    "$REPO_ROOT" "$CURRENT_BRANCH" "$EXT_ARG" "${PATHS[@]}" <<'PYTHON'
 import sys, subprocess, os, re, datetime
-target_type    = sys.argv[1]
-target         = sys.argv[2]
-output         = sys.argv[3]
-remote         = sys.argv[4]
-branch         = sys.argv[5]
-since          = sys.argv[6]
-until          = sys.argv[7]
-title_arg      = sys.argv[8]
-repo_name      = sys.argv[9]
-current_branch = sys.argv[10]
+output_arg     = sys.argv[1]
+remote         = sys.argv[2]
+branch         = sys.argv[3]
+since          = sys.argv[4]
+until          = sys.argv[5]
+title_arg      = sys.argv[6]
+repo_root      = sys.argv[7]
+current_branch = sys.argv[8]
+ext_arg        = sys.argv[9]
+paths          = sys.argv[10:]
+repo_name      = os.path.basename(repo_root)
 
 def web_url(url):
     """Remote-URL (SSH oder HTTPS) in die Web-Adresse des Repos umwandeln."""
@@ -147,6 +151,55 @@ def parse_bound(value, option, constant):
         return ('tag', value)
     fail(f"{option}: '{value}' ist weder Tag noch Datum (JJJJ-MM-TT) noch {constant}")
 
+# Filter: Pfade (-p) und Dateiendungen (-e) als Git-Pathspecs
+exts = [x for x in ext_arg.split(',') if x] if ext_arg else []
+for x in exts:
+    if not re.match(r'^[A-Za-z0-9_]+$', x):
+        fail(f"-e: ungültige Endung '{x}' (kommagetrennt ohne Punkt, z. B. gd,tscn)")
+
+def glob_escape(path):
+    return re.sub(r'([*?\[\]\\])', r'\\\1', path)
+
+def is_file(path):
+    return os.path.isfile(path)
+
+if paths and exts:
+    pathspecs = []
+    for path in paths:
+        for x in exts:
+            if is_file(path):
+                if path.endswith('.' + x):
+                    pathspecs.append(path)
+            else:
+                pathspecs.append(f":(glob){glob_escape(path.rstrip('/'))}/**/*.{x}")
+    if not pathspecs:
+        fail("-p und -e: keiner der Pfade passt zu den Endungen")
+elif paths:
+    pathspecs = list(paths)
+elif exts:
+    pathspecs = [f":(glob)**/*.{x}" for x in exts]
+else:
+    pathspecs = []
+
+def path_label(path):
+    """Pfad relativ zum Repo-Root für Dateinamen, '/' wird zu '_', Dateiendung entfällt."""
+    rel = os.path.relpath(os.path.abspath(path), repo_root)
+    if is_file(path):
+        rel = os.path.splitext(rel)[0]
+    return re.sub(r'[\\/]+', '_', rel.strip('/')).strip('_.') or 'root'
+
+filter_parts = [path_label(p) for p in paths] + exts
+filter_desc = ", ".join(paths)
+if exts:
+    filter_desc += (" " if paths else "") + "(" + ", ".join(f"*.{x}" for x in exts) + ")"
+
+if output_arg:
+    output = output_arg
+elif filter_parts:
+    output = os.path.join(repo_root, 'docs', f"CHANGELOG_{'_'.join(filter_parts)}.md")
+else:
+    output = os.path.join(repo_root, 'CHANGELOG.md')
+
 # Quelle: der Branch, aus dessen Historie das Fenster geholt wird
 if branch:
     if not is_branch(branch):
@@ -174,10 +227,7 @@ cmd = ['git','log','--no-merges','--pretty=format:%ad%x1f%h%x1f%B%x1e','--date=s
 cmd += [end if end_kind == 'tag' else source]
 if start_kind == 'tag':
     cmd += [f'^{start}']
-if target_type == "dir":
-    cmd += ['--', target + '/']
-elif target_type == "file":
-    cmd += ['--', target]
+cmd += ['--', *pathspecs]
 
 proc = subprocess.run(cmd, capture_output=True, text=True)
 if proc.returncode != 0:
@@ -198,7 +248,7 @@ for record in proc.stdout.split('\x1e'):
     entries.append({'date':parts[0],'hash':parts[1],'msg':msg})
 
 if not entries:
-    label = target if target else "das Repository"
+    label = filter_desc or "das Repository"
     print(f"Keine Git-Einträge für '{label}' gefunden, keine Datei erzeugt.", file=sys.stderr)
     sys.exit(0)
 
@@ -230,10 +280,10 @@ def type_rank(msg):
 # Determine title
 if title_arg:
     title = title_arg
-elif target_type == "all":
-    title = f"{repo_name} ({source})"
 else:
-    title = f"Changelog für {target}"
+    title = f"{repo_name} ({source})"
+    if filter_desc:
+        title += f" – {filter_desc}"
 
 lines = []
 lines.append(f"# {title}\n")
