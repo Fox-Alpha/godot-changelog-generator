@@ -379,7 +379,7 @@ if release:
         ents = [e for e in entries if commit_type(e['msg']) == t]
         if not ents:
             continue
-        lines.append(f"### {t or 'Sonstige'}\n")
+        lines.append(f"### {t or 'Sonstige'}\n\n")
         for e in ents:
             lines.append(f"- {strip_type(e['msg'])}{release_link(e['hash'])}\n")
         lines.append("\n")
@@ -388,14 +388,17 @@ else:
     groups = {}
     for e in entries:
         groups.setdefault(e['date'], []).append(e)
-    lines.append(f"# {title}\n")
-    lines.append("Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist " + " → ".join(TYPE_ORDER) + " → sonstige.\n")
+    lines.append(f"# {title}\n\n")
+    lines.append("Die folgenden Einträge wurden automatisch aus der Git-Historie generiert. Die Reihenfolge der Typen ist " + " → ".join(TYPE_ORDER) + " → sonstige.\n\n")
     for date, ents in groups.items():
-        lines.append(f"## {date}\n")
+        lines.append(f"## {date}\n\n")
         # sorted() ist stabil: innerhalb eines Typs bleibt die Git-Reihenfolge erhalten
         for e in sorted(ents, key=lambda e: type_rank(e['msg'])):
             lines.append(f"- {e['msg']}{commit_link(e['hash'])}\n")
         lines.append("\n")
+
+# Datei endet mit genau einem Zeilenumbruch statt einer Leerzeile
+lines = ["".join(lines).rstrip("\n") + "\n"]
 
 if output == '-':
     try:
