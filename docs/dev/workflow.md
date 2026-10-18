@@ -81,6 +81,20 @@ Release: skip
 - `Release: show` nimmt einen sonst internen Commit auf (z. B. `Docs:` für eine neue Anleitung).
 - Setzen: `git commit --trailer "Release: skip"` oder als letzte Zeile von Hand.
 - Auslesen: `git log --format='%h %s %(trailers:key=Release,valueonly)'`
+- Git liest Trailer nur aus dem **letzten Absatz**. Weitere Trailer wie `Co-Authored-By:` stehen im selben Block,
+  ohne Leerzeile dazwischen. Steht `Release:` in einem eigenen Absatz davor, wird er nicht erkannt.
+
+Bei jedem Commit prüfen, ob die Sichtbarkeit nach Typ passt. Typische Fälle für einen Trailer:
+
+| Fall | Trailer |
+|---|---|
+| `Docs:` an der Nutzer-Doku (Anleitung, README, Hilfe), nicht an Entwickler-Doku oder Notizen | `Release: show` |
+| `Cfg:`, die ändert, was Nutzer bekommen (z. B. Inhalt von Release-Archiven, Installationsweg) | `Release: show` |
+| `Upd:` nur für die Versionsnummer eines Releases | `Release: skip` |
+| `Fix:` an einem Fehler, der im selben, noch nicht veröffentlichten Stand entstanden ist | `Release: skip` |
+| `Fix:`/`Upd:` ohne für Nutzer bemerkbare Wirkung (Tippfehler im Log, interne Texte) | `Release: skip` |
+
+Was in einem Projekt als Nutzer-Doku gilt, legt die Projektdatei fest.
 
 ### Merge-Commits
 
@@ -129,7 +143,9 @@ Merge: <Beschreibung des Features>
 
 ### Während der Sitzung
 
-- Vor der Umsetzung kurz das geplante Vorgehen beschreiben und auf Bestätigung warten.
+- Vor der Umsetzung kurz das geplante Vorgehen beschreiben und auf Bestätigung warten. Dabei die geplanten Commits
+  nennen, die einen Release-Trailer bekommen (`Release: show`/`skip`), damit der Nutzer vor dem Commit entscheiden
+  kann.
 - **Selbstständig in kleinen Schritten committen**, nach jedem logischen Schritt. Nicht alles in einen Abschluss-Commit.
 - **Pushen nur auf Anweisung.** Ist ein Branch oder Thema abgeschlossen, nachfragen, ob gepusht werden soll.
 - Wird eine Aufgabe größer als erwartet, anhalten und den Umfang neu abstimmen.
