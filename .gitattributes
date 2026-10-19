@@ -4,5 +4,4 @@
 # Nicht in die Release-Archive (git archive, "Source code" auf GitHub)
 .gitattributes  export-ignore
 CLAUDE.md       export-ignore
-UPDATE-PLAN.md  export-ignore
 docs/dev/       export-ignore
