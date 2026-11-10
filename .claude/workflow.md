@@ -1,6 +1,7 @@
 # Git-Workflow
 
-> Quelle: Kopie von `Multiplayer-Template/docs/dev/workflow.md`. Änderungen am Kern dort vornehmen und hierher übernehmen.
+> Quelle: Kopie von `claudeprojekte/.claude/workflow.md` (Projektsammlung). Änderungen am Kern dort vornehmen und
+> hierher übernehmen. Die Kopie hält das Repo unabhängig von der Sammlung.
 
 > Vor jedem Commit, Branch-Wechsel oder Merge lesen.
 > Neutraler Kern für alle Projekte. Projektspezifisches steht in Zusätzen (z. B. `workflow-godot.md`) oder in der
@@ -79,22 +80,30 @@ Release: skip
 
 - `Release: skip` blendet einen sonst sichtbaren Commit aus (z. B. ein `Fix:`, den kein Nutzer bemerkt).
 - `Release: show` nimmt einen sonst internen Commit auf (z. B. `Docs:` für eine neue Anleitung).
-- Setzen: `git commit --trailer "Release: skip"` oder als letzte Zeile von Hand.
-- Auslesen: `git log --format='%h %s %(trailers:key=Release,valueonly)'`
 - Git liest Trailer nur aus dem **letzten Absatz**. Weitere Trailer wie `Co-Authored-By:` stehen im selben Block,
   ohne Leerzeile dazwischen. Steht `Release:` in einem eigenen Absatz davor, wird er nicht erkannt.
 
-Bei jedem Commit prüfen, ob die Sichtbarkeit nach Typ passt. Typische Fälle für einen Trailer:
+Bei jedem Commit prüfen, ob die Sichtbarkeit nach Typ passt. Typische Fälle für einen Trailer stehen in
+`.claude/workflow-details.md`.
 
-| Fall | Trailer |
-|---|---|
-| `Docs:` an der Nutzer-Doku (Anleitung, README, Hilfe), nicht an Entwickler-Doku oder Notizen | `Release: show` |
-| `Cfg:`, die ändert, was Nutzer bekommen (z. B. Inhalt von Release-Archiven, Installationsweg) | `Release: show` |
-| `Upd:` nur für die Versionsnummer eines Releases | `Release: skip` |
-| `Fix:` an einem Fehler, der im selben, noch nicht veröffentlichten Stand entstanden ist | `Release: skip` |
-| `Fix:`/`Upd:` ohne für Nutzer bemerkbare Wirkung (Tippfehler im Log, interne Texte) | `Release: skip` |
+### Issue-Referenzen
 
-Was in einem Projekt als Nutzer-Doku gilt, legt die Projektdatei fest.
+Nicht jede Änderung braucht ein Issue. Kleinigkeiten, die sofort erledigt werden und keine Entscheidung brauchen (ein
+einzelner Button, ein kleiner Fix), entstehen ohne Issue auf einem `feature/<thema>`-Branch, auch mehrere auf einem
+gemeinsamen. Nachvollziehbar bleiben sie über Commits und Changelog. Ein Issue lohnt sich, wenn die Arbeit später
+erledigt wird, eine Entscheidung oder Planung braucht, mehrere Schritte umfasst oder sonst verloren ginge.
+
+Gilt, wenn es zum Thema ein Issue mit Nummer gibt (auf GitHub angelegt):
+
+- Jeder zugehörige Commit nennt die Nummer am Ende der Betreffzeile: `Fix: Kollision an Hängen nicht erkannt (#42)`.
+- Der **Merge-Commit** des Feature-Branches schließt das Issue mit `Closes: #42` im Trailer-Block (auch `Fixes:`,
+  `Resolves:`). Der Doppelpunkt ist wichtig: Ohne ihn ist die Zeile kein Trailer, und Git wertet den ganzen Block nicht
+  mehr aus, auch `Release:` und `Co-Authored-By:` darin nicht. Nicht schon ein Commit im Feature-Branch: Erledigt ist
+  das Issue erst mit dem ganzen Feature.
+- GitHub schließt das Issue, sobald der Merge-Commit den **Standardbranch** des Repos erreicht, mit `main` also erst
+  beim Release. Soll es schon beim Merge in `development` zugehen, wird `development` auf GitHub als Standardbranch
+  eingestellt. Das legt die Projektdatei fest.
+- Abhängigkeiten zwischen Issues stehen im Issue selbst: `Blocked by #12` bzw. `Depends on #12`.
 
 ### Merge-Commits
 
@@ -102,7 +111,11 @@ Was in einem Projekt als Nutzer-Doku gilt, legt die Projektdatei fest.
 Merge: <Beschreibung des Features>
 
 - Zusammenfassung, was der Branch enthält
+
+Closes: #<nr>
 ```
+
+Die Zeile `Closes` nur, wenn der Branch zu einem Issue gehört.
 
 ---
 
@@ -112,20 +125,21 @@ Merge: <Beschreibung des Features>
 |---|---|
 | Standardbranch des Repos (`main` oder `master`) | Nur stabile Stände und Releases. **Nie direkt committen.** |
 | `development` | Laufende Entwicklung, Basis für alle Feature-Branches |
-| `feature/<thema>` | Ein Branch pro Thema, zweigt immer von `development` ab |
+| `feature/<thema>` | Ein Branch pro Thema, zweigt immer von `development` ab. Mit Issue: `feature/<nr>-<thema>` |
 
 ### Regeln
 
 - Existiert `development` nicht, wird er vom Standardbranch abgezweigt.
 - Ein Feature-Branch gehört zu **einem Thema**, nicht zu einer Sitzung. Er darf über mehrere Sitzungen laufen.
+- Branchnamen in lower-case und kebab-case. Gehört der Branch zu einem Issue, folgt die Nummer direkt auf das Präfix:
+  `feature/42-player-movement`. Auf GitHub verknüpft `gh issue develop 42 --base development --name
+  "feature/42-player-movement" --checkout` Branch und Issue.
 - Feature-Branches bleiben thematisch sauber. Fällt unterwegs Arbeit für ein anderes Thema an, kommt sie in einen
   eigenen Branch (bei Bedarf per Cherry-Pick).
 - Nach dem Merge in `development` wird der Feature-Branch gelöscht, lokal und auf dem Remote.
 - **Merges in `development` oder den Standardbranch nie selbstständig**, immer erst nach ausdrücklicher Freigabe.
 - Merges in den Standardbranch nur, wenn der Stand vollständig und fehlerfrei ist.
 - Releases auf dem Standardbranch bekommen einen **Versions-Tag** (z. B. `v0.1.0`, `v1.0.0`).
-- Branches umbenennen: auf der Hosting-Plattform (z. B. GitHub) umbenennen, damit PRs und Schutzregeln mitwandern,
-  danach lokal `git branch -m`, `git fetch --prune` und `git branch -u` auf jedem Rechner.
 
 ---
 
@@ -147,7 +161,11 @@ Merge: <Beschreibung des Features>
   nennen, die einen Release-Trailer bekommen (`Release: show`/`skip`), damit der Nutzer vor dem Commit entscheiden
   kann.
 - **Selbstständig in kleinen Schritten committen**, nach jedem logischen Schritt. Nicht alles in einen Abschluss-Commit.
-- **Pushen nur auf Anweisung.** Ist ein Branch oder Thema abgeschlossen, nachfragen, ob gepusht werden soll.
+- **Pushen:** Die Freigabe eines Merges in `development` schließt den Push auf alle Remotes und das Löschen des
+  Feature-Branches ein. Einzelne Commits ohne Merge bleiben lokal und gehen beim nächsten Push mit, dafür wird nicht
+  extra gefragt. Das Repo der Projektsammlung wird beim Merge eines Branches oder am Sitzungsende gepusht.
+  Merges in den Standardbranch, Tags und schwer Rückholbares brauchen weiterhin eine ausdrückliche Freigabe.
+  Am Sitzungsende noch ungepushte Commits melden.
 - Wird eine Aufgabe größer als erwartet, anhalten und den Umfang neu abstimmen.
 
 ### Ende
